@@ -9,19 +9,22 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// clientはチャットを行っている1人のユーザーを表します。
+// client is one of users in room.
 type Client struct {
 	socket     *websocket.Conn // socket
 	sendByte   chan []byte     // send channel
 	sendString chan string     // send channel
 	room       *Room           // room controller
+	isFinalize bool
 }
 
 func CreateClient(room *Room, socket *websocket.Conn, sendSize int) *Client {
 	client := &Client{
-		socket:   socket,
-		sendByte: make(chan []byte, sendSize),
-		room:     room,
+		socket:     socket,
+		sendByte:   make(chan []byte, sendSize),
+		sendString: make(chan string),
+		room:       room,
+		isFinalize: false,
 	}
 	return client
 }
@@ -47,12 +50,12 @@ func (c *Client) read() {
 		if msgType, msg, err := c.socket.ReadMessage(); err == nil {
 
 			if msgType == websocket.BinaryMessage {
-				// データをconverterへ
+				// convert raw data
 				converter := convert.Create(msg)
 
 				fmt.Println(converter.CommandId())
 
-				// 退出処理は別
+				// if command is 1, leave
 				if converter.CommandId() == 1 {
 					c.room.leave <- c
 				} else {
@@ -65,38 +68,55 @@ func (c *Client) read() {
 					}
 				}
 			} else if msgType == websocket.TextMessage {
-				/*
-					cmd := string(msg)
-					if cmd == "enter" {
-						c.room.join <- c
-					} else if cmd == "leave" {
-						c.room.leave <- c
-					} else {
-						c.room.forward <- msg
-					}
-				*/
+				msgStr := string(msg)
+				c.room.broadCastString <- msgStr
 			}
 		} else {
+			/* error or close signal */
 			break
 		}
 	}
-	c.socket.Close()
+
+	// if this line reach, finalize client
+	c.Finalize()
 }
 
 func (c *Client) writeByte() {
 	for bytes := range c.sendByte {
 		if err := c.socket.WriteMessage(websocket.BinaryMessage, bytes); err != nil {
+			/* if error occurred, finalize */
 			break
 		}
 	}
-	c.socket.Close()
+	// if this line reach, finalize client
+	c.Finalize()
 }
 
 func (c *Client) writeString() {
 	for msg := range c.sendString {
 		if err := c.socket.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
+			/* if error occurred, finalize */
 			break
 		}
 	}
+	// if this line reach, finalize client
+	c.Finalize()
+}
+
+func (c *Client) Finalize() {
+	// already finalized ?
+	if c.isFinalize {
+		return
+	}
+	// leave room
+	c.room.leave <- c
+
+	// close channel
+	close(c.sendString)
+	close(c.sendByte)
+
+	// socket close
 	c.socket.Close()
+	c.isFinalize = true
+	fmt.Println("finalize")
 }

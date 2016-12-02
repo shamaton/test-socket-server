@@ -26,12 +26,13 @@ var roomMap = map[int]*Room{}
 
 func CreateRoom(id int) *Room {
 	r := &Room{
-		id:            id,
-		broadCastByte: make(chan []byte),
-		join:          make(chan *Client),
-		leave:         make(chan *Client),
-		clients:       make(map[*Client]bool),
-		tracer:        trace.Off(),
+		id:              id,
+		broadCastByte:   make(chan []byte),
+		broadCastString: make(chan string),
+		join:            make(chan *Client),
+		leave:           make(chan *Client),
+		clients:         make(map[*Client]bool),
+		tracer:          trace.Off(),
 	}
 
 	roomMap[id] = r
@@ -63,7 +64,6 @@ func (r *Room) Run() {
 		case cli := <-r.leave:
 			// 退室
 			delete(r.clients, cli)
-			//close(client.send)
 			r.tracer.Trace("[", r.id, "]", "クライアントが退室しました")
 
 		case bytes := <-r.broadCastByte:
@@ -74,12 +74,6 @@ func (r *Room) Run() {
 				case cli.sendByte <- bytes:
 					// メッセージを送信
 					r.tracer.Trace("[", r.id, "]", " -- クライアントに送信されました")
-				default:
-					// 送信に失敗
-					delete(r.clients, cli)
-					close(cli.sendByte)
-					close(cli.sendString)
-					r.tracer.Trace("[", r.id, "]", " -- 送信に失敗しました。クライアントをクリーンアップします")
 				}
 			}
 
@@ -91,12 +85,6 @@ func (r *Room) Run() {
 				case cli.sendString <- msg:
 					// メッセージを送信
 					r.tracer.Trace("[", r.id, "]", " -- クライアントに送信されました")
-				default:
-					// 送信に失敗
-					delete(r.clients, cli)
-					close(cli.sendByte)
-					close(cli.sendString)
-					r.tracer.Trace("[", r.id, "]", " -- 送信に失敗しました。クライアントをクリーンアップします")
 				}
 			}
 		}
