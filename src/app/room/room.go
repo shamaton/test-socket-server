@@ -6,22 +6,16 @@ import (
 )
 
 type Room struct {
-	// 部屋番号
-	id int
-	// forwardは他のクライアントに転送するためのメッセージを保持するチャネルです。
-	broadCastByte   chan []byte
-	broadCastString chan string
-	// joinはチャットルームに参加しようとしているクライアントのためのチャネルです。
-	join chan *Client
-	// leaveはチャットルームから退室しようとしているクライアントのためのチャネルです
-	leave chan *Client
-	// clientsには在室しているすべてのクライアントが保持されます。
-	clients map[*Client]bool
-	// tracerはチャットルーム上で行われた操作のログを受け取ります。
-	tracer trace.Tracer
+	id              int              // room id
+	broadCastByte   chan []byte      // to send raw data
+	broadCastString chan string      // to send string message
+	join            chan *Client     // use if client join
+	leave           chan *Client     // use if client leave
+	clients         map[*Client]bool // all clients
+	tracer          trace.Tracer     // logger
 }
 
-// ルーム管理
+// all rooms management
 var roomMap = map[int]*Room{}
 
 func CreateRoom(id int) *Room {
