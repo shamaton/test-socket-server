@@ -25,26 +25,24 @@ var roomNo = 0
 
 func GetSocketAndCreateRoom(c echo.Context) error {
 
-	// ソケットを生成
+	// create socket
 	sock, err := getSocket(c)
 	if err != nil {
 		log.Println("[FAILED] create socket:", err)
 		return err
 	}
 
-	// ルーム生成
-	// TODO : 何かしらのランダム値をkeyにする
+	// create room
+	// TODO : make ramdom room id
 	roomNo++
 	r := room.CreateRoom(roomNo)
 	r.SetTracer(trace.New(os.Stdout))
 
-	// クライアント生成
+	// create client
 	cli := room.CreateClient(r, sock, messageBufferSize)
 
-	// ルーム稼働開始
+	// run
 	go r.Run()
-
-	// ソケット通信開始
 	cli.Run()
 
 	return nil
@@ -52,7 +50,7 @@ func GetSocketAndCreateRoom(c echo.Context) error {
 
 func GetSocket(c echo.Context) error {
 
-	// 部屋番号を取得
+	// get room id
 	roomIdStr := c.FormValue("room_id")
 	roomId, err := strconv.Atoi(roomIdStr)
 	if err != nil {
@@ -60,24 +58,24 @@ func GetSocket(c echo.Context) error {
 		return err
 	}
 
-	// 部屋取得
+	// get room
 	r, err := room.Get(roomId)
 	if err != nil {
 		log.Println("[ERROR] ", err, roomId)
 		return err
 	}
 
-	// ソケットを生成
+	// create socket
 	sock, err := getSocket(c)
 	if err != nil {
 		log.Println("[FAILED] create socket:", err)
 		return err
 	}
 
-	// クライアント生成
+	// create client
 	cli := room.CreateClient(r, sock, messageBufferSize)
 
-	// ソケット通信開始
+	// run
 	cli.Run()
 
 	return nil

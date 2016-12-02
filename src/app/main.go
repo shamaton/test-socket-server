@@ -13,14 +13,13 @@ import (
 
 const BIND = ":8080"
 
-// templは1つのテンプレートを表します
 type templateHandler struct {
 	once     sync.Once
 	filename string
 	templ    *template.Template
 }
 
-// ServeHTTPはHTTPリクエストを処理します
+// serve template
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.once.Do(func() {
 		pwd, _ := os.Getwd()
@@ -44,11 +43,6 @@ func (t *templateHandler) Render(c echo.Context) error {
 func main() {
 	e := echo.New()
 
-	/*
-		e.GET("/", func(c echo.Context) error {
-			return c.String(http.StatusOK, "Hello, World!")
-		})
-	*/
 	t := &templateHandler{filename: "chat.html"}
 	e.GET("/", t.Render)
 

@@ -41,44 +41,38 @@ func Get(id int) (*Room, error) {
 	return r, nil
 }
 
-func (r *Room) BroadCast() chan []byte {
-	return r.broadCastByte
-}
-
 func (r *Room) Run() {
-	r.tracer.Trace("ルーム[", r.id, "] が開始されました")
+	r.tracer.Trace("[", r.id, "] : opened")
 
 	for {
 		select {
 		case cli := <-r.join:
 			// 参加
 			r.clients[cli] = true
-			r.tracer.Trace("[", r.id, "]", "新しいクライアントが参加しました")
+			r.tracer.Trace("[", r.id, "] : ", "join new client")
 
 		case cli := <-r.leave:
 			// 退室
 			delete(r.clients, cli)
-			r.tracer.Trace("[", r.id, "]", "クライアントが退室しました")
+			r.tracer.Trace("[", r.id, "] : ", "leave a client")
 
 		case bytes := <-r.broadCastByte:
-			r.tracer.Trace("[", r.id, "]", "データを受信しました: ", len(bytes))
-			// すべてのクライアントにメッセージを転送
+			r.tracer.Trace("[", r.id, "] : ", "receive data: ", len(bytes))
+			// broadcast
 			for cli := range r.clients {
 				select {
 				case cli.sendByte <- bytes:
-					// メッセージを送信
-					r.tracer.Trace("[", r.id, "]", " -- クライアントに送信されました")
+					r.tracer.Trace("[", r.id, "] : ", " -- has sent data")
 				}
 			}
 
 		case msg := <-r.broadCastString:
-			r.tracer.Trace("[", r.id, "]", "メッセージを受信しました: ", string(msg))
-			// すべてのクライアントにメッセージを転送
+			r.tracer.Trace("[", r.id, "] : ", "receive message: ", string(msg))
+			// broadcast
 			for cli := range r.clients {
 				select {
 				case cli.sendString <- msg:
-					// メッセージを送信
-					r.tracer.Trace("[", r.id, "]", " -- クライアントに送信されました")
+					r.tracer.Trace("[", r.id, "] : ", " -- has sent message")
 				}
 			}
 		}
