@@ -108,6 +108,8 @@ func (c *Client) Finalize() {
 	if c.isFinalize {
 		return
 	}
+	c.isFinalize = true
+
 	// leave room
 	c.room.leave <- c
 
@@ -117,6 +119,5 @@ func (c *Client) Finalize() {
 
 	// socket close
 	c.socket.Close()
-	c.isFinalize = true
 	fmt.Println("finalize")
 }
