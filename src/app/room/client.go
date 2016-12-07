@@ -119,5 +119,4 @@ func (c *Client) Finalize() {
 
 	// socket close
 	c.socket.Close()
-	fmt.Println("finalize")
 }

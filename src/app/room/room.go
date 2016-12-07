@@ -47,14 +47,14 @@ func (r *Room) Run() {
 	for {
 		select {
 		case cli := <-r.join:
-			// 参加
 			r.clients[cli] = true
 			r.tracer.Trace("[", r.id, "] : ", "join new client")
 
 		case cli := <-r.leave:
-			// 退室
-			delete(r.clients, cli)
-			r.tracer.Trace("[", r.id, "] : ", "leave a client")
+			if _, isExist := r.clients[cli]; isExist {
+				delete(r.clients, cli)
+				r.tracer.Trace("[", r.id, "] : ", "leave a client")
+			}
 
 		case bytes := <-r.broadCastByte:
 			r.tracer.Trace("[", r.id, "] : ", "receive data: ", len(bytes))
