@@ -7,18 +7,25 @@
     </style>
   </head>
   <body>
-    <ul id="messages"></ul>
-    WebSocketを使ったチャットアプリケーション
+    <div>name</div>
+    <div id="name">
+      <input type="text">
+    </div>
+
+    <div>message</div>
     <form id="chatbox">
       <textarea></textarea>
       <input type="submit" value="送信" />
     </form>
+
+    <ul id="messages"></ul>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js">
 </script>
 <script>
   $(function(){
     var socket = null;
+    var nameBox = $("#name input");
     var msgBox = $("#chatbox textarea");
     var messages = $("#messages");
     $("#chatbox").submit(function(){
@@ -27,7 +34,7 @@
         alert("エラー: WebSocket接続が行われていません。");
         return false;
       }
-      socket.send(msgBox.val());
+      socket.send(nameBox.val() + ":" + msgBox.val());
       msgBox.val("");
       return false;
     });
@@ -39,7 +46,11 @@
         alert("接続が終了しました。");
       }
       socket.onmessage = function(e) {
-        messages.append($("<li>").text(e.data));
+        if (e.data.constructor == String) {
+          messages.append($("<li>").text(e.data));
+        } else if (e.data.constructor === Blob) {
+          // ignore
+        }
       }
     }
   });
