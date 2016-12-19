@@ -1,7 +1,7 @@
 package room
 
 import (
-	"app/trace"
+	"front/trace"
 	"errors"
 )
 
