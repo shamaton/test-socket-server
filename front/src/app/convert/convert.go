@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"front/err"
+	"app/err"
 	"reflect"
 
 	"encoding/binary"

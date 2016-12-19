@@ -1,8 +1,8 @@
 package room
 
 import (
-	"front/convert"
-	"front/game"
+	"app/convert"
+	"app/game"
 
 	"fmt"
 

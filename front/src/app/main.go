@@ -1,7 +1,7 @@
 package main
 
 import (
-	"front/api"
+	"app/api"
 	"html/template"
 	"net/http"
 	"os"

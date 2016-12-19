@@ -1,7 +1,7 @@
 package game
 
 import (
-	"front/convert"
+	"app/convert"
 	"fmt"
 )
 
