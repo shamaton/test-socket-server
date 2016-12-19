@@ -24,7 +24,8 @@ _testmain.go
 *.prof
 
 # vendor
-src/vendor
+front/src/vendor
+back/src/vendor
 
 # editor
 .idea/
