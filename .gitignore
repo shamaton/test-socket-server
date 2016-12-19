@@ -28,5 +28,5 @@ front/src/vendor
 back/src/vendor
 
 # editor
-.idea/
+.idea
 *.iml
