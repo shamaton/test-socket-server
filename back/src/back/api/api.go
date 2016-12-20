@@ -3,6 +3,7 @@ package api
 import (
 	"back/room"
 	"log"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo"
@@ -16,9 +17,10 @@ const (
 var upGrader = &websocket.Upgrader{
 	ReadBufferSize:  socketBufferSize,
 	WriteBufferSize: socketBufferSize,
+	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func GetSocketAndCreateRoom(c echo.Context) error {
+func GetSocket(c echo.Context) error {
 
 	// create socket
 	sock, err := getSocket(c)

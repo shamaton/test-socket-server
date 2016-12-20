@@ -7,28 +7,32 @@ import (
 )
 
 type Room struct {
-	broadCastByte   chan []byte      // to send raw data
-	broadCastString chan string      // to send string message
+	broadcastByte   chan []byte      // to send raw data
+	broadcastString chan string      // to send string message
 	join            chan *Client     // use if client join
 	leave           chan *Client     // use if client leave
 	clients         map[*Client]bool // all clients
 	tracer          trace.Tracer     // logger
 }
 
-var globalRoom *Room
+var gRoom *Room
 
 func CreateAndRun() {
-	globalRoom = &Room{
-		broadCastByte:   make(chan []byte),
-		broadCastString: make(chan string),
+	if gRoom != nil {
+		return
+	}
+
+	gRoom = &Room{
+		broadcastByte:   make(chan []byte),
+		broadcastString: make(chan string),
 		join:            make(chan *Client),
 		leave:           make(chan *Client),
 		clients:         make(map[*Client]bool),
 		tracer:          trace.Off(),
 	}
-	globalRoom.SetTracer(trace.New(os.Stdout))
+	gRoom.SetTracer(trace.New(os.Stdout))
 
-	go globalRoom.Run()
+	go gRoom.Run()
 }
 
 func (r *Room) Run() {
@@ -46,7 +50,7 @@ func (r *Room) Run() {
 				r.tracer.Trace("room : leave a client")
 			}
 
-		case bytes := <-r.broadCastByte:
+		case bytes := <-r.broadcastByte:
 			r.tracer.Trace("room : receive data: ", len(bytes))
 			// broadcast
 			for cli := range r.clients {
@@ -56,7 +60,7 @@ func (r *Room) Run() {
 				}
 			}
 
-		case msg := <-r.broadCastString:
+		case msg := <-r.broadcastString:
 			r.tracer.Trace("room : receive message: ", string(msg))
 			// broadcast
 			for cli := range r.clients {

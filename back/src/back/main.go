@@ -15,7 +15,7 @@ func main() {
 	// create room
 	room.CreateAndRun()
 
-	e.GET("/get_and_create", api.GetSocketAndCreateRoom)
+	e.GET("/", api.GetSocket)
 
 	e.Logger.Fatal(e.Start(BIND))
 }

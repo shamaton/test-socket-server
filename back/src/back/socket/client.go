@@ -1,19 +1,12 @@
 package room
 
-import (
-	"back/convert"
-	"back/game"
-	"fmt"
-
-	"github.com/gorilla/websocket"
-)
+import "github.com/gorilla/websocket"
 
 // client is one of users in room.
 type Client struct {
 	socket     *websocket.Conn // socket
 	sendByte   chan []byte     // send channel
 	sendString chan string     // send channel
-	room       *Room           // room controller
 	isFinalize bool
 }
 
@@ -22,19 +15,14 @@ func CreateClient(socket *websocket.Conn, sendSize int) *Client {
 		socket:     socket,
 		sendByte:   make(chan []byte, sendSize),
 		sendString: make(chan string),
-		room:       globalRoom,
 		isFinalize: false,
 	}
 	return client
 }
 
-func (c *Client) Room() *Room {
-	return c.room
-}
-
 func (c *Client) Run() {
 	// join myself.
-	c.room.join <- c
+	gRoom.join <- c
 
 	// start mode write @ go routine
 	go c.writeByte()
@@ -47,28 +35,11 @@ func (c *Client) Run() {
 func (c *Client) read() {
 	for {
 		if msgType, msg, err := c.socket.ReadMessage(); err == nil {
-
+			// broadcast
 			if msgType == websocket.BinaryMessage {
-				// convert raw data
-				converter := convert.Create(msg)
-
-				fmt.Println(converter.CommandId())
-
-				// if command is 1, leave
-				if converter.CommandId() == 1 {
-					c.room.leave <- c
-				} else {
-					game.Dispatch(converter)
-					if converter.IsPacked() {
-						c.room.broadCastByte <- converter.PackedData()
-					}
-					if len(converter.Message) > 0 {
-
-					}
-				}
+				gRoom.broadcastByte <- msg
 			} else if msgType == websocket.TextMessage {
-				msgStr := string(msg)
-				c.room.broadCastString <- msgStr
+				gRoom.broadcastString <- string(msg)
 			}
 		} else {
 			/* error or close signal */
@@ -110,7 +81,7 @@ func (c *Client) Finalize() {
 	c.isFinalize = true
 
 	// leave room
-	c.room.leave <- c
+	gRoom.leave <- c
 
 	// close channel
 	close(c.sendString)
