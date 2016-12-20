@@ -1,4 +1,4 @@
-package room
+package socket
 
 import (
 	"back/trace"
@@ -17,7 +17,7 @@ type Room struct {
 
 var gRoom *Room
 
-func CreateAndRun() {
+func StartRoom() {
 	if gRoom != nil {
 		return
 	}

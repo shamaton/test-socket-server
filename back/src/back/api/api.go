@@ -1,7 +1,7 @@
 package api
 
 import (
-	"back/room"
+	"back/socket"
 	"log"
 	"net/http"
 
@@ -30,7 +30,7 @@ func GetSocket(c echo.Context) error {
 	}
 
 	// create client
-	cli := room.CreateClient(sock, messageBufferSize)
+	cli := socket.CreateClient(sock, messageBufferSize)
 
 	// run
 	cli.Run()

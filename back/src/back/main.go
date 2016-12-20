@@ -2,7 +2,7 @@ package main
 
 import (
 	"back/api"
-	"back/room"
+	"back/socket"
 
 	"github.com/labstack/echo"
 )
@@ -13,7 +13,7 @@ func main() {
 	e := echo.New()
 
 	// create room
-	room.CreateAndRun()
+	socket.StartRoom()
 
 	e.GET("/", api.GetSocket)
 
