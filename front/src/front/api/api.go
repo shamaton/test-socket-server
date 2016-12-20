@@ -1,14 +1,14 @@
 package api
 
 import (
-	"front/room"
-	"front/trace"
+	"front/socket"
 	"log"
-	"os"
+
 	"strconv"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo"
+	"errors"
 )
 
 const (
@@ -23,46 +23,26 @@ var upGrader = &websocket.Upgrader{
 
 var roomNo = 0
 
-func GetSocketAndCreateRoom(c echo.Context) error {
-
-	// create socket
-	sock, err := getSocket(c)
-	if err != nil {
-		log.Println("[FAILED] create socket:", err)
-		return err
-	}
-
-	// create room
-	// TODO : make ramdom room id
-	roomNo++
-	r := room.CreateRoom(roomNo)
-	r.SetTracer(trace.New(os.Stdout))
-
-	// create client
-	cli := room.CreateClient(r, sock, messageBufferSize)
-
-	// run
-	go r.Run()
-	cli.Run()
-
-	return nil
-}
-
 func GetSocket(c echo.Context) error {
 
-	// get room id
-	roomIdStr := c.FormValue("room_id")
-	roomId, err := strconv.Atoi(roomIdStr)
+	// get user id
+	userIdStr := c.FormValue("uid")
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		log.Println("[ERROR] room id is invalid!!", roomIdStr)
+		log.Println("[ERROR] user id is invalid!!", userIdStr)
 		return err
 	}
 
-	// get room
-	r, err := room.Get(roomId)
+	groupIdStr := c.FormValue("gid")
+	groupId, err := strconv.Atoi(groupIdStr)
 	if err != nil {
-		log.Println("[ERROR] ", err, roomId)
+		log.Println("[ERROR] group id is invalid!!", groupIdStr)
 		return err
+	}
+
+	// register map
+	if socket.IsExistUser(userId) {
+		return errors.New("user has already existed!!")
 	}
 
 	// create socket
@@ -73,7 +53,7 @@ func GetSocket(c echo.Context) error {
 	}
 
 	// create client
-	cli := room.CreateClient(r, sock, messageBufferSize)
+	cli := socket.CreateClient(userId, groupId, sock, messageBufferSize)
 
 	// run
 	cli.Run()

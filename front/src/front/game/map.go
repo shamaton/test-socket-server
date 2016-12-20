@@ -1,9 +1,6 @@
 package game
 
-import (
-	"front/convert"
-	"fmt"
-)
+import "front/convert"
 
 // 受信コマンド一覧
 // TODO : 削除するとずれてしまうのでenumは使うべきではない気がする
@@ -17,15 +14,16 @@ const (
 )
 
 var mapper = map[uint32]func(*convert.Converter){
-	1: leaveRoom,
-	2: receiveMessage,
+//1: leaveRoom,
+//2: receiveMessage,
 }
 
 func Dispatch(converter *convert.Converter) {
-	f := mapper[converter.CommandId()]
-	f(converter)
+	//f := mapper[converter.CommandId()]
+	//f(converter)
 }
 
+/*
 func leaveRoom(converter *convert.Converter) {
 	// データ確認
 	var dummy bool
@@ -35,13 +33,21 @@ func leaveRoom(converter *convert.Converter) {
 
 }
 
+
+
 // TODO : エラーチェックなど
 func receiveMessage(converter *convert.Converter) {
-	var message string
-	converter.Unpack(&message)
+	type receiveData struct {
+		rangeType int
+		rangeId int
+		fromId int
+		message string
+	}
+	r := new(receiveData)
+	converter.Unpack(r)
+
 	converter.Pack(2, message)
 	fmt.Println("message ->", message)
-
 }
-
+*/
 // 応答コマンド一覧

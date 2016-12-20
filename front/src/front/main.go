@@ -8,10 +8,19 @@ import (
 	"path/filepath"
 	"sync"
 
+	"log"
+
+	"front/socket"
+
 	"github.com/labstack/echo"
 )
 
 const BIND = ":8080"
+
+const (
+	origin = "http://localhost:8080"
+	url    = "ws://localhost:8081"
+)
 
 type templateHandler struct {
 	once     sync.Once
@@ -41,12 +50,18 @@ func (t *templateHandler) Render(c echo.Context) error {
 }
 
 func main() {
+
+	// connect backend server
+	err := socket.ConnectBack(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	e := echo.New()
 
 	t := &templateHandler{filename: "chat.html"}
 	e.GET("/", t.Render)
 
-	e.GET("/get_and_create", api.GetSocketAndCreateRoom)
 	e.GET("/get", api.GetSocket)
 	e.Logger.Fatal(e.Start(BIND))
 }
