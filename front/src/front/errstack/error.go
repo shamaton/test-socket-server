@@ -1,7 +1,7 @@
 /*
   Package error message stacker.
 */
-package err
+package errstack
 
 /*
   error.go
@@ -15,7 +15,7 @@ import (
 
 type errArgs []interface{}
 
-type ErrWriter struct {
+type Stacker struct {
 	errMsgs errArgs
 }
 
@@ -28,9 +28,9 @@ type ErrWriter struct {
   return
     生成済オブジェクト
 */
-func NewErrWriter(msg ...interface{}) ErrWriter {
+func NewErrWriter(msg ...interface{}) Stacker {
 
-	ew := ErrWriter{}
+	ew := Stacker{}
 
 	// msgがある場合追加しておく
 	if len(msg) > 0 {
@@ -50,7 +50,7 @@ func NewErrWriter(msg ...interface{}) ErrWriter {
   return
     スタック済オブジェクト
 */
-func (this ErrWriter) Write(msg ...interface{}) ErrWriter {
+func (this Stacker) Write(msg ...interface{}) Stacker {
 	this.errMsgs = append(this.errMsgs, msg...)
 	// 呼び出し元
 	this = this.addCallerMsg(2)
@@ -63,7 +63,7 @@ func (this ErrWriter) Write(msg ...interface{}) ErrWriter {
   return
     true or false
 */
-func (this ErrWriter) HasErr() bool {
+func (this Stacker) HasErr() bool {
 	if len(this.errMsgs) > 0 {
 		return true
 	}
@@ -76,7 +76,7 @@ func (this ErrWriter) HasErr() bool {
   return
     エラーメッセージ
 */
-func (this ErrWriter) Err() errArgs {
+func (this Stacker) Err() errArgs {
 	return this.errMsgs
 }
 
@@ -89,7 +89,7 @@ func (this ErrWriter) Err() errArgs {
   return
     スタック済オブジェクト
 */
-func (this ErrWriter) addCallerMsg(skip int) ErrWriter {
+func (this Stacker) addCallerMsg(skip int) Stacker {
 	// 呼び出し元
 	pc, file, line, _ := runtime.Caller(skip)
 	callerName := runtime.FuncForPC(pc).Name()
@@ -114,7 +114,7 @@ func (this ErrWriter) addCallerMsg(skip int) ErrWriter {
   return
     メッセージ
 */
-func (this ErrWriter) fixedPhrase(file string, line int, callerName string) errArgs {
+func (this Stacker) fixedPhrase(file string, line int, callerName string) errArgs {
 	// 一旦、srcでフィルタする
 	splits := strings.Split(file, "/src/")
 
@@ -136,7 +136,7 @@ func (this ErrWriter) fixedPhrase(file string, line int, callerName string) errA
   return
     スタック済オブジェクト
 */
-func (this ErrWriter) unshift(v ...interface{}) ErrWriter {
+func (this Stacker) unshift(v ...interface{}) Stacker {
 	this.errMsgs = append(v, this.errMsgs...)
 	return this
 }

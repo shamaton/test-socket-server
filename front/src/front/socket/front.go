@@ -8,19 +8,19 @@ import (
 
 // client is one of users in room.
 type Client struct {
-	*websocket.Conn             // socket
-	fromBack        chan []byte // receive from back.go
-	isFinalize      bool
+	socket     *websocket.Conn // socket
+	fromBack   chan []byte     // receive from back.go
+	isFinalize bool
 }
 
 func CreateClient(userId, groupId int, socket *websocket.Conn, sendSize int) *Client {
 	client := &Client{
-		socket,
-		make(chan []byte, sendSize),
-		false,
+		socket:     socket,
+		fromBack:   make(chan []byte, sendSize),
+		isFinalize: false,
 	}
 	client.fromBack = make(chan []byte, sendSize)
-	client.SetCloseHandler(client.closeSocket)
+	client.socket.SetCloseHandler(client.close)
 
 	// register map
 	users[userId] = client
@@ -40,8 +40,9 @@ func (c *Client) Run() {
 
 func (c *Client) read() {
 	for {
-		if msgType, msg, err := c.ReadMessage(); err == nil {
+		if msgType, msg, err := c.socket.ReadMessage(); err == nil {
 			if msgType == websocket.BinaryMessage {
+				fmt.Println("send to back...")
 				back.fromFront <- msg
 			}
 		} else {
@@ -51,22 +52,23 @@ func (c *Client) read() {
 	}
 
 	// if this line reach, finalize client
-	c.Finalize()
+	c.finalize()
 }
 
 func (c *Client) writeByte() {
 	// message from back
 	for bytes := range c.fromBack {
-		if err := c.WriteMessage(websocket.BinaryMessage, bytes); err != nil {
+		fmt.Println("receive from back")
+		if err := c.socket.WriteMessage(websocket.BinaryMessage, bytes); err != nil {
 			/* if error occurred, finalize */
 			break
 		}
 	}
 	// if this line reach, finalize client
-	c.Finalize()
+	c.finalize()
 }
 
-func (c *Client) Finalize() {
+func (c *Client) finalize() {
 	// already finalized ?
 	if c.isFinalize {
 		return
@@ -77,12 +79,12 @@ func (c *Client) Finalize() {
 	close(c.fromBack)
 
 	// socket close
-	c.Close()
+	c.socket.Close()
 }
 
-func (c *Client) closeSocket(code int, message string) error {
-	fmt.Println("call close!!")
-	// close channel
-	close(c.fromBack)
+func (c *Client) close(code int, message string) error {
+	fmt.Println("call close!!", code, message)
+	// finalize
+	c.finalize()
 	return nil
 }

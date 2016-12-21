@@ -6,9 +6,11 @@ import (
 
 	"strconv"
 
+	"errors"
+	"fmt"
+
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo"
-	"errors"
 )
 
 const (
@@ -39,6 +41,9 @@ func GetSocket(c echo.Context) error {
 		log.Println("[ERROR] group id is invalid!!", groupIdStr)
 		return err
 	}
+
+	// debug
+	fmt.Println("userid : groupid ", userIdStr, groupIdStr)
 
 	// register map
 	if socket.IsExistUser(userId) {

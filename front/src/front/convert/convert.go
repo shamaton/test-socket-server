@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"front/err"
+	"front/errstack"
 	"reflect"
 
 	"encoding/binary"
@@ -50,8 +50,8 @@ func Create(recieve []byte) *Converter {
   return
     失敗時にエラー
 */
-func (c *Converter) Unpack(out interface{}) err.ErrWriter {
-	ew := err.NewErrWriter()
+func (c *Converter) Unpack(out interface{}) errstack.Stacker {
+	ew := errstack.NewErrWriter()
 
 	// decode(codec)
 	mh := &codec.MsgpackHandle{RawToString: true}
@@ -74,8 +74,8 @@ func (c *Converter) Unpack(out interface{}) err.ErrWriter {
   return
     Packed Data、エラー
 */
-func (c *Converter) Pack(responseCmdId int, data interface{}) err.ErrWriter {
-	ew := err.NewErrWriter()
+func (c *Converter) Pack(responseCmdId int, data interface{}) errstack.Stacker {
+	ew := errstack.NewErrWriter()
 	var packedData []byte
 
 	// encode(codec)

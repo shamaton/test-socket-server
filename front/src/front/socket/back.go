@@ -6,6 +6,8 @@ import (
 	"front/game"
 	"net/http"
 
+	"front/errstack"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -14,9 +16,9 @@ const messageBufferSize = 256
 
 // client is one of users in room.
 type connBack struct {
-	*websocket.Conn             // socket
-	fromFront       chan []byte // receive from front.go
-	isFinalize      bool
+	socket     *websocket.Conn // socket
+	fromFront  chan []byte     // receive from front.go
+	isFinalize bool
 }
 
 var back *connBack
@@ -37,10 +39,10 @@ func ConnectBack(url string) error {
 	}
 
 	// create back
-	back := &connBack{
-		socket,
-		make(chan []byte, messageBufferSize),
-		false,
+	back = &connBack{
+		socket:     socket,
+		fromFront:  make(chan []byte, messageBufferSize),
+		isFinalize: false,
 	}
 
 	// running
@@ -64,14 +66,13 @@ const (
 	private
 )
 
-
-
 func (c *connBack) read() {
 	for {
-		if msgType, msg, err := c.ReadMessage(); err == nil {
+		if msgType, msg, err := c.socket.ReadMessage(); err == nil {
 
 			if msgType == websocket.BinaryMessage {
 
+				fmt.Println("send to back...")
 				// convert raw data
 				converter := convert.Create(msg)
 
@@ -79,7 +80,11 @@ func (c *connBack) read() {
 				case 0:
 				// todo : leave ?
 				case 1:
-					typ, id := c.getRangeInfo(converter)
+					typ, id, es := c.getRangeInfo(converter)
+					if es.HasErr() {
+						fmt.Println(es.Err())
+						continue
+					}
 					c.send2front(typ, id, msg)
 				default:
 
@@ -97,21 +102,21 @@ func (c *connBack) read() {
 	}
 
 	// if this line reach, finalize client
-	c.Finalize()
+	c.finalize()
 }
 
 func (c *connBack) writeByte() {
 	for bytes := range c.fromFront {
-		if err := c.WriteMessage(websocket.BinaryMessage, bytes); err != nil {
+		if err := c.socket.WriteMessage(websocket.BinaryMessage, bytes); err != nil {
 			/* if error occurred, finalize */
 			break
 		}
 	}
 	// if this line reach, finalize client
-	c.Finalize()
+	c.finalize()
 }
 
-func (c *connBack) Finalize() {
+func (c *connBack) finalize() {
 	// already finalized ?
 	if c.isFinalize {
 		return
@@ -122,17 +127,17 @@ func (c *connBack) Finalize() {
 	close(c.fromFront)
 
 	// socket close
-	c.Close()
+	c.socket.Close()
 }
 
-func (c *connBack) closeSocket(code int, message string) error {
+func (c *connBack) close(code int, message string) error {
 	fmt.Println("call close conback!!")
 	// close channel
 	close(c.fromFront)
 	return nil
 }
 
-func (c *connBack) getRangeInfo(converter *convert.Converter) (int, int) {
+func (c *connBack) getRangeInfo(converter *convert.Converter) (int, int, errstack.Stacker) {
 	type receiveData struct {
 		rangeType int
 		rangeId   int
@@ -140,8 +145,8 @@ func (c *connBack) getRangeInfo(converter *convert.Converter) (int, int) {
 		message   string
 	}
 	r := new(receiveData)
-	converter.Unpack(r)
-	return r.rangeType, r.rangeId
+	es := converter.Unpack(r)
+	return r.rangeType, r.rangeId, es
 }
 
 func (c *connBack) send2front(rangeType, rangeId int, data []byte) {
