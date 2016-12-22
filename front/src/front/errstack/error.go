@@ -28,7 +28,7 @@ type Stacker struct {
   return
     生成済オブジェクト
 */
-func NewErrWriter(msg ...interface{}) Stacker {
+func NewStack(msg ...interface{}) Stacker {
 
 	ew := Stacker{}
 

@@ -72,7 +72,7 @@ func (c *connBack) read() {
 
 			if msgType == websocket.BinaryMessage {
 
-				fmt.Println("send to back...")
+				fmt.Println("front -> back : receive from backend...")
 				// convert raw data
 				converter := convert.Create(msg)
 
@@ -107,6 +107,7 @@ func (c *connBack) read() {
 
 func (c *connBack) writeByte() {
 	for bytes := range c.fromFront {
+		fmt.Println("front -> back : send to backend")
 		if err := c.socket.WriteMessage(websocket.BinaryMessage, bytes); err != nil {
 			/* if error occurred, finalize */
 			break
@@ -139,14 +140,16 @@ func (c *connBack) close(code int, message string) error {
 
 func (c *connBack) getRangeInfo(converter *convert.Converter) (int, int, errstack.Stacker) {
 	type receiveData struct {
-		rangeType int
-		rangeId   int
-		fromId    int
-		message   string
+		RangeType int
+		RangeId   int
+		FromId    int
+		Name      string
+		Message   string
 	}
-	r := new(receiveData)
-	es := converter.Unpack(r)
-	return r.rangeType, r.rangeId, es
+	var r receiveData
+	es := converter.Unpack(&r)
+	fmt.Println(r)
+	return r.RangeType, r.RangeId, es
 }
 
 func (c *connBack) send2front(rangeType, rangeId int, data []byte) {
@@ -160,7 +163,7 @@ func (c *connBack) send2front(rangeType, rangeId int, data []byte) {
 		if !ok {
 			return
 		}
-		for _, id := range us {
+		for id, _ := range us {
 			if user, ok := users[id]; ok {
 				user.fromBack <- data
 			}

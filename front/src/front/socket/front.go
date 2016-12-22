@@ -8,6 +8,8 @@ import (
 
 // client is one of users in room.
 type Client struct {
+	userId     int
+	groupId    int
 	socket     *websocket.Conn // socket
 	fromBack   chan []byte     // receive from back.go
 	isFinalize bool
@@ -15,6 +17,8 @@ type Client struct {
 
 func CreateClient(userId, groupId int, socket *websocket.Conn, sendSize int) *Client {
 	client := &Client{
+		userId:     userId,
+		groupId:    groupId,
 		socket:     socket,
 		fromBack:   make(chan []byte, sendSize),
 		isFinalize: false,
@@ -25,7 +29,12 @@ func CreateClient(userId, groupId int, socket *websocket.Conn, sendSize int) *Cl
 	// register map
 	users[userId] = client
 	user2group[userId] = groupId
-	group2user[groupId] = append(group2user[groupId], groupId)
+
+	_, exist := group2user[groupId]
+	if !exist {
+		group2user[groupId] = map[int]bool{}
+	}
+	group2user[groupId][userId] = true
 	return client
 }
 
@@ -42,7 +51,7 @@ func (c *Client) read() {
 	for {
 		if msgType, msg, err := c.socket.ReadMessage(); err == nil {
 			if msgType == websocket.BinaryMessage {
-				fmt.Println("send to back...")
+				fmt.Println("user -> front : send to back")
 				back.fromFront <- msg
 			}
 		} else {
@@ -58,7 +67,7 @@ func (c *Client) read() {
 func (c *Client) writeByte() {
 	// message from back
 	for bytes := range c.fromBack {
-		fmt.Println("receive from back")
+		fmt.Println("back -> front : send to user")
 		if err := c.socket.WriteMessage(websocket.BinaryMessage, bytes); err != nil {
 			/* if error occurred, finalize */
 			break
@@ -74,6 +83,11 @@ func (c *Client) finalize() {
 		return
 	}
 	c.isFinalize = true
+
+	// delete from map
+	delete(users, c.userId)
+	delete(user2group, c.userId)
+	delete(group2user[c.groupId], c.userId)
 
 	// close channel
 	close(c.fromBack)

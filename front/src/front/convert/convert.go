@@ -51,8 +51,7 @@ func Create(recieve []byte) *Converter {
     失敗時にエラー
 */
 func (c *Converter) Unpack(out interface{}) errstack.Stacker {
-	ew := errstack.NewErrWriter()
-
+	ew := errstack.NewStack()
 	// decode(codec)
 	mh := &codec.MsgpackHandle{RawToString: true}
 	dec := codec.NewDecoderBytes(c.unpackData, mh)
@@ -75,7 +74,7 @@ func (c *Converter) Unpack(out interface{}) errstack.Stacker {
     Packed Data、エラー
 */
 func (c *Converter) Pack(responseCmdId int, data interface{}) errstack.Stacker {
-	ew := errstack.NewErrWriter()
+	ew := errstack.NewStack()
 	var packedData []byte
 
 	// encode(codec)
