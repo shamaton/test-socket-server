@@ -60,8 +60,7 @@ func (c *connBack) Run() {
 }
 
 const (
-	_ = iota
-	world
+	world = iota
 	group
 	private
 )
