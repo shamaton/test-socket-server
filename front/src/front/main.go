@@ -63,6 +63,7 @@ func main() {
 	e.GET("/", t.Render)
 
 	e.GET("/get", api.GetSocket)
+	e.GET("/ping", api.Ping)
 	e.Logger.Fatal(e.Start(BIND))
 }
 

@@ -16,6 +16,7 @@ func main() {
 	socket.StartRoom()
 
 	e.GET("/", api.GetSocket)
+	e.GET("/ping", api.Ping)
 
 	e.Logger.Fatal(e.Start(BIND))
 }

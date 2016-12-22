@@ -72,3 +72,8 @@ func getSocket(c echo.Context) (*websocket.Conn, error) {
 	socket, err := upGrader.Upgrade(w, h, nil)
 	return socket, err
 }
+
+func Ping(c echo.Context) error {
+	c.String(200, "pong")
+	return nil
+}
