@@ -67,7 +67,7 @@ func GetSocket(c echo.Context) error {
 }
 
 func getSocket(c echo.Context) (*websocket.Conn, error) {
-	w := c.Response().Writer()
+	w := c.Response().Writer
 	h := c.Request()
 	socket, err := upGrader.Upgrade(w, h, nil)
 	return socket, err
