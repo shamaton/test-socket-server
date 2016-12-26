@@ -46,7 +46,7 @@ func (t *templateHandler) Render(c echo.Context) error {
 		t.templ = template.Must(template.ParseFiles(filepath.Join(pwd, "src/app/room/templates",
 			t.filename)))
 	})
-	return t.templ.Execute(c.Response().Writer(), c.Request())
+	return t.templ.Execute(c.Response().Writer, c.Request())
 }
 
 func main() {
