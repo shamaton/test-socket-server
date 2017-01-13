@@ -3,7 +3,6 @@ package socket
 import (
 	"fmt"
 	"front/convert"
-	"front/game"
 	"net/http"
 
 	"front/errstack"
@@ -65,6 +64,13 @@ const (
 	private
 )
 
+const (
+	_ = iota
+	sendMessage
+	updateState
+	getMemberInfo
+)
+
 func (c *connBack) read() {
 	for {
 		if msgType, msg, err := c.socket.ReadMessage(); err == nil {
@@ -76,21 +82,35 @@ func (c *connBack) read() {
 				converter := convert.Create(msg)
 
 				switch converter.CommandId() {
-				case 0:
-				// todo : leave ?
-				case 1:
-					typ, id, es := c.getRangeInfo(converter)
+				case sendMessage:
+					typ, tid, fid, es := c.getRangeInfo(converter)
 					if es.HasErr() {
 						fmt.Println(es.Err())
 						continue
 					}
-					c.send2front(typ, id, msg)
-				default:
 
-					game.Dispatch(converter)
-					if converter.IsPacked() {
-						//c.room.broadCastByte <- converter.PackedData()
+					// NOTE : does not work if server scaling
+					c.send2front(typ, tid, msg)
+					if typ == private {
+						c.send2front(typ, fid, msg)
 					}
+
+				case updateState:
+					// notice to world
+					c.send2front(world, -1, msg)
+
+				case getMemberInfo:
+					id := c.getMemberInfo(converter)
+					// target and myself
+					c.send2front(private, id, converter.PackedData())
+
+				default:
+					/*
+						game.Dispatch(converter)
+						if converter.IsPacked() {
+							c.room.broadCastByte <- converter.PackedData()
+						}
+					*/
 				}
 
 			}
@@ -130,14 +150,14 @@ func (c *connBack) finalize() {
 	c.socket.Close()
 }
 
-func (c *connBack) close(code int, message string) error {
-	fmt.Println("call close conback!!")
+func (c *connBack) closeSelf(code int, message string) error {
+	fmt.Printf("client close : [%d] %s", code, message)
 	// close channel
 	close(c.fromFront)
 	return nil
 }
 
-func (c *connBack) getRangeInfo(converter *convert.Converter) (int, int, errstack.Stacker) {
+func (c *connBack) getRangeInfo(converter *convert.Converter) (int, int, int, errstack.Stacker) {
 	type receiveData struct {
 		RangeType int
 		RangeId   int
@@ -147,8 +167,35 @@ func (c *connBack) getRangeInfo(converter *convert.Converter) (int, int, errstac
 	}
 	var r receiveData
 	es := converter.Unpack(&r)
-	fmt.Println(r)
-	return r.RangeType, r.RangeId, es
+	return r.RangeType, r.RangeId, r.FromId, es
+}
+
+func (c *connBack) getMemberInfo(converter *convert.Converter) int {
+
+	type receive struct {
+		UserId int
+	}
+	rec := receive{}
+	converter.Unpack(&rec)
+
+	type response struct {
+		UserId   int
+		UserName string
+		Status   int
+	}
+	infos := []response{}
+	for k, _ := range users {
+		s := response{}
+		s.UserId = k
+		s.UserName = user2name[k]
+		s.Status = 1
+		infos = append(infos, s)
+	}
+	es := converter.Pack(getMemberInfo, infos)
+	if es.HasErr() {
+		fmt.Println(es.Err())
+	}
+	return rec.UserId
 }
 
 func (c *connBack) send2front(rangeType, rangeId int, data []byte) {

@@ -42,6 +42,12 @@ func GetSocket(c echo.Context) error {
 		return err
 	}
 
+	userName := c.FormValue("name")
+	if userName == "" {
+		log.Println("[ERROR] user name is empty!!")
+		return errors.New("name is empty")
+	}
+
 	// debug
 	fmt.Println("userid : groupid ", userIdStr, groupIdStr)
 
@@ -58,7 +64,7 @@ func GetSocket(c echo.Context) error {
 	}
 
 	// create client
-	cli := socket.CreateClient(userId, groupId, sock, messageBufferSize)
+	cli := socket.CreateClient(userId, groupId, userName, sock, messageBufferSize)
 
 	// run
 	cli.Run()

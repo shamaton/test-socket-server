@@ -2,6 +2,7 @@ package socket
 
 var (
 	users      = map[int]*Client{}
+	user2name  = map[int]string{}
 	user2group = map[int]int{}
 	group2user = map[int]map[int]bool{}
 )

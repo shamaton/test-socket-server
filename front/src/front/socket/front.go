@@ -15,7 +15,7 @@ type Client struct {
 	isFinalize bool
 }
 
-func CreateClient(userId, groupId int, socket *websocket.Conn, sendSize int) *Client {
+func CreateClient(userId, groupId int, name string, socket *websocket.Conn, sendSize int) *Client {
 	client := &Client{
 		userId:     userId,
 		groupId:    groupId,
@@ -24,10 +24,11 @@ func CreateClient(userId, groupId int, socket *websocket.Conn, sendSize int) *Cl
 		isFinalize: false,
 	}
 	client.fromBack = make(chan []byte, sendSize)
-	client.socket.SetCloseHandler(client.close)
+	client.socket.SetCloseHandler(client.closeSelf)
 
 	// register map
 	users[userId] = client
+	user2name[userId] = name
 	user2group[userId] = groupId
 
 	_, exist := group2user[groupId]
@@ -86,6 +87,7 @@ func (c *Client) finalize() {
 
 	// delete from map
 	delete(users, c.userId)
+	delete(user2name, c.userId)
 	delete(user2group, c.userId)
 	delete(group2user[c.groupId], c.userId)
 
@@ -96,8 +98,8 @@ func (c *Client) finalize() {
 	c.socket.Close()
 }
 
-func (c *Client) close(code int, message string) error {
-	fmt.Println("call close!!", code, message)
+func (c *Client) closeSelf(code int, message string) error {
+	fmt.Printf("client close : [%d] %s", code, message)
 	// finalize
 	c.finalize()
 	return nil
